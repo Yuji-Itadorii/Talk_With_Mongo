@@ -1,0 +1,7 @@
+langchain
+langchain_community
+pandas
+pymongo
+python-dotenv
+streamlit
+faiss
