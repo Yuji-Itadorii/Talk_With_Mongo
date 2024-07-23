@@ -1,0 +1,39 @@
+Input: What are the amenities provided at the "Ribeira Charming Duplex"?
+
+Output:
+
+[
+  { "$match": { "name": "Ribeira Charming Duplex" } },
+  { "$project": { "amenities": 1, "_id": 0 } }
+]
+
+
+Input: How many reviews does the "Ribeira Charming Duplex" have, and what is the average rating?
+
+Output:
+[
+  { "$match": { "name": "Ribeira Charming Duplex" } },
+  { "$project": { 
+      "number_of_reviews": 1, 
+      "average_rating": { "$toInt": "$review_scores.review_scores_rating" }, 
+      "_id": 0 
+    } 
+  }
+]
+
+
+Input: What is the cleaning fee and security deposit for the "Ribeira Charming Duplex"?
+
+Output:
+[
+  { "$match": { "name": "Ribeira Charming Duplex" } },
+  { "$project": { 
+      "cleaning_fee": 1, 
+      "security_deposit": 1, 
+      "_id": 0 
+    } 
+  }
+]
+
+Each of these queries is designed to run within MongoDB's aggregation framework to extract specific information based on the user's questions.
+ The `$project` step is used to format the output to include only relevant fields. 
