@@ -86,7 +86,7 @@ if st.button("Submit"):
     
     if type(check) == str:
         print("Getting cached document. . .")
-        cached_document = get_cached_document(check)
+        cached_document = get_cached_document(check , username , pwd , database_name , collection_name)
         # Display results
         st.write("Results:")
         st.dataframe(pd.DataFrame(list(cached_document)))
@@ -127,7 +127,7 @@ if st.button("Submit"):
 
         # print("document to insert" , results)
         # Adding docs to cached documents
-        add_document(input_question, results)
+        add_document(input_question, results , username , pwd)
 
 
 else:

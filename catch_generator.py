@@ -3,9 +3,6 @@ from langchain_community.vectorstores import FAISS
 from pymongo import MongoClient
 import urllib
 
-username = ''
-pwd = ''
-
 
 def check_query_present(query):
 
@@ -39,7 +36,7 @@ def check_query_present(query):
 
 
 
-def get_cached_document(similar_query):
+def get_cached_document(similar_query , username , pwd , database_name , collection_name):
 
     client = MongoClient('mongodb+srv://' + urllib.parse.quote_plus(username) + ":" + urllib.parse.quote_plus(pwd) + '@cluster0.jjbz59l.mongodb.net/?retrywrites=true&w=majority&appName=Cluster0')
     db = client['talk_mongo']  # replace with your database name
@@ -57,7 +54,7 @@ def get_cached_document(similar_query):
 
 
 
-def add_document(query, docs):
+def add_document(query, docs , username , pwd):
     # Connect to MongoDB
     client = MongoClient('mongodb+srv://' + urllib.parse.quote_plus(username) + ":" + urllib.parse.quote_plus(pwd) + '@cluster0.jjbz59l.mongodb.net/?retrywrites=true&w=majority&appName=Cluster0')
     db = client['talk_mongo']  # replace with your database name
