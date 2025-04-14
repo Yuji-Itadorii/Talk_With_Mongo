@@ -6,3 +6,4 @@ python-dotenv
 streamlit
 faiss-cpu
 google-genai
+sentence-transformers

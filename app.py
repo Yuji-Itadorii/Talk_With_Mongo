@@ -120,7 +120,7 @@ if st.button("Submit"):
 
         message = create_messages(input_question, schema, sample)
 
-        client = genai.Client(api_key="AIzaSyDLXYyLWxc4GnlRZXRGhfuZOlz1yGur8eA")
+        client = genai.Client(api_key="Your_API_Key")
         response = client.models.generate_content(
                 model="gemini-2.0-flash", contents=message
         )
