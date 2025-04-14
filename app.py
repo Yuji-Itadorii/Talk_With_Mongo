@@ -1,15 +1,23 @@
-from langchain_community.llms import HuggingFaceEndpoint
 import os, io, json
 import streamlit as st
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from Generate_Schema import get_schema
+from google import genai
 import urllib
 import pandas as pd
 import re
-from langchain_community.chat_models import ChatHuggingFace
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from catch_generator import check_query_present, add_document, get_cached_document
+from langchain.prompts import PromptTemplate
+from langchain.output_parsers import PydanticOutputParser
+
+from pydantic import BaseModel
+from typing import List, Dict, Any
+
+class MongoQueryOutput(BaseModel):
+    query: List[Dict[str, Any]]  # List of aggregation stages
+
 
 load_dotenv()
 HF_TOKEN = os.environ.get('HUGGINGFACEHUB_API_TOKEN')
@@ -46,37 +54,46 @@ def extract_query(text):
         return "No query found in the text."
 
 
-def create_messages(question, schema, sample):
-    system_message_content = (
-        "You are a very intelligent AI assistant who is an expert in identifying relevant questions from the user and converting them into NoSQL MongoDB aggregation pipeline queries. "
-        "Note: You have to just return the query as to use in the aggregation pipeline, nothing else. Don't return any other thing. "
-        "Please use the below schema to write the only 1 MongoDB queries; don't use any other queries. "
-        "Schema: The mentioned MongoDB collection contains information about movies. The schema for this document represents the structure of the data, describing various properties related to the movie, cast, directors, and additional features. "
-        "Here’s a breakdown of its schema with descriptions for each field: {schema} "
-        "This schema provides a comprehensive view of the data structure for a movie in MongoDB, including nested and embedded data structures that add depth and detail to the document. "
-        "Use the below sample examples to generate your queries perfectly. "
-        "Sample Example: Below are several sample user questions and the corresponding MongoDB aggregation pipeline queries that can be used to fetch the desired data. {sample} "
-        "Very Important Note: You have to just return 1 query code, nothing else. Don't return any additional text with the query. Please follow this strictly."
-    ).format(schema=schema, sample=sample)
+def create_messages(input_question, schema, sample):
+    
 
-    user_message_content_1 = "Get the First Document of Database"
-    assistant_message_content ="""
-        [
-              { "$limit" : 1}
-              ]
+    parser = PydanticOutputParser(pydantic_object=MongoQueryOutput)
+
+    prompt_template = PromptTemplate.from_template(
         """
-    user_message_content_2 = f"{question}"
-    
+    You are an intelligent AI assistant specialized in converting user questions into MongoDB aggregation pipeline  queries.
 
-    messages = [
-            SystemMessage(content=system_message_content),
-            HumanMessage(content=user_message_content_1),
-            AIMessage(content=assistant_message_content),
-            HumanMessage(content=user_message_content_2),
-        ]
+    Rules:
+    - Only return a valid MongoDB aggregation pipeline as a Python list.
+    - DO NOT include any explanations, comments, or text—only the query.
+    - Use the schema and examples provided for reference.
+    - Strictly follow JSON-compatible formatting.
 
-    
-    return messages
+    Schema:
+    {schema}
+
+    Sample Examples:
+    {sample}
+
+    User Question:
+    {question}
+
+    {format_instructions}
+    """
+    )
+
+    formatted_prompt = prompt_template.format(
+        schema=schema,  # Your dynamic schema string
+        sample=sample,  # Your sample Q&A pairs
+        question=input_question,
+        format_instructions=parser.get_format_instructions()
+    )
+
+    print("Formatted Prompt: ", formatted_prompt)
+
+    return formatted_prompt
+
+
 
 # try:
 if st.button("Submit"):
@@ -101,24 +118,18 @@ if st.button("Submit"):
             # Get schema
         schema = get_schema(username, pwd, database_name, collection_name)
 
-            # Define the language model and chain
-        repo_id = "microsoft/Phi-3-mini-4k-instruct"
-        llm = HuggingFaceEndpoint(
-                repo_id=repo_id,
-                max_length=128,
-                    temperature=0.01,
-                huggingfacehub_api_token='YOUR_TOKEN',
-        )
-
-        chatllm = ChatHuggingFace(llm=llm)
-
         message = create_messages(input_question, schema, sample)
 
-        response = (chatllm(messages=message).content)
-        print(response)
-        query = extract_query(response)
+        client = genai.Client(api_key="AIzaSyDLXYyLWxc4GnlRZXRGhfuZOlz1yGur8eA")
+        response = client.models.generate_content(
+                model="gemini-2.0-flash", contents=message
+        )
+
+        print("Response : ", response.text)
+        query = extract_query(response.text)
         results = []
         for doc in collection.aggregate(query):
+            doc['_id'] = str(doc['_id'])
             results.append(doc)
 
          # Display results
